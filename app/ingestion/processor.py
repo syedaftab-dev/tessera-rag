@@ -7,6 +7,13 @@ import os
 import sys
 import uuid
 import json
+
+if sys.platform == "win32":
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    if hasattr(sys.stderr, "reconfigure"):
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
 import logfire
 
 from qdrant_client import QdrantClient
@@ -19,7 +26,15 @@ from app.ingestion.loaders.html import parse_html
 from app.ingestion.loaders.text import parse_text
 from app.ingestion.chunking.splitter import chunk_text
 
-logfire.configure(service_name="enterprise-ingestion-service")
+token = getattr(settings, "LOGFIRE_TOKEN", None) or os.getenv("LOGFIRE_TOKEN")
+try:
+    logfire.configure(
+        service_name="enterprise-ingestion-service",
+        token=token,
+        inspect_arguments=False,
+    )
+except Exception:
+    logfire.configure(send_to_logfire=False, inspect_arguments=False)
 
 # Local folder where parsed + chunked JSON metadata is saved (replaces GCS processed bucket)
 PROCESSED_DATA_DIR = "processed_data"

@@ -1,4 +1,4 @@
-from typing import list
+from typing import List
 import logfire
 
 # split the text into chunks of size of 1500 characters each

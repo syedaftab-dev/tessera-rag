@@ -1,17 +1,19 @@
-# Enterprise Agentic RAG (Scalable Pipeline)
+# Tessera-RAG System
 
-A production-grade, enterprise-level RAG system built with **LangGraph**, **Portkey LLM Gateway**, and **Gemini Embeddings**. The system distinguishes between technical "True Data" and random "Noisy Data" using semantic re-ranking, history-aware planning, and NeMo Guardrails for input/output safety.
+A production-grade, enterprise-level Agentic RAG system built with **LangGraph**, **Portkey LLM Gateway**, and **Gemini Embeddings**. The system distinguishes between technical "True Data" and random "Noisy Data" using semantic re-ranking, history-aware planning, and NeMo Guardrails for input and output safety.
+
+---
 
 ## Key Features
 
-- **Agentic Intelligence**: LangGraph for cyclic reasoning, multi-step planning, and conversation memory.
-- **Guardrails**: NeMo Guardrails gate blocks off-topic, jailbreak, and injection inputs before any retrieval.
-- **LLM Gateway**: Portkey routes all LLM calls with automatic fallback between primary and backup Groq keys.
-- **Enterprise Search**: Qdrant Cloud for high-performance vector search + FlashRank for local semantic reranking.
-- **Gemini Embeddings**: Google `gemini-embedding-2-preview` (3072-dim) via `langchain-google-genai`.
-- **Local Document Parsing**: PDF, HTML, TXT, DOCX, PPTX parsed entirely on-device — no external OCR service.
-- **Observability**: Full trace nesting with **Pydantic Logfire** and **LangSmith** across every agent node.
-- **Evaluation Suite**: RAGAS-powered eval pipeline (6 metrics) with a dedicated Streamlit demo app.
+- **Agentic Intelligence**: LangGraph state graph for cyclic reasoning, multi-step planning, and conversational memory (`MemorySaver`).
+- **Guardrails Gate**: NeMo Guardrails layer blocks off-topic requests, general programming queries, and jailbreak attempts before any vector search.
+- **LLM Gateway**: Portkey routes all inference calls with semantic caching, automatic fallback between keys, and retry policies.
+- **Enterprise Search**: Hosted Qdrant Cloud vector search paired with FlashRank for local, zero-latency cross-encoder re-ranking.
+- **High-Dimension Embeddings**: Google `gemini-embedding-2-preview` (3072-dim) with adaptive exponential backoff for rate limits.
+- **Universal Document Parsing**: Idempotent on-device extraction for PDF, HTML, TXT, DOCX, and PPTX with duplicate skipping.
+- **Distributed Observability**: Full trace nesting with **Pydantic Logfire** and **LangSmith** across all agent execution spans.
+- **Evaluation Suite**: Automated RAGAS evaluation pipeline covering 6 metrics with a dedicated Streamlit dashboard.
 
 ---
 
@@ -39,22 +41,26 @@ graph TD
 ```text
 ├── app/
 │   ├── agents/
-│   │   └── nodes/       # Planner, Retriever, Responder LangGraph nodes
-│   ├── gateway/         # Portkey LLM gateway — primary + fallback Groq routing
-│   ├── guardrails/      # NeMo Guardrails input/output filtering
+│   │   ├── nodes/       # Planner, Retriever, Responder LangGraph nodes
+│   │   ├── graph.py     # StateGraph definition and checkpoint compilation
+│   │   └── state.py     # AgentState TypedDict schema
+│   ├── gateway/         # Portkey LLM gateway client, slugs, and fallback routing
+│   ├── guardrails/      # NeMo Guardrails Colang rules, indicators, and runtime
 │   ├── ingestion/
-│   │   ├── chunking/    # Paragraph-based text splitter (1500 char max)
-│   │   └── loaders/     # Local parsers — PDF (pypdf), HTML, TXT, DOCX, PPTX
+│   │   ├── chunking/    # Paragraph-based text splitter
+│   │   ├── loaders/     # Local parsers: PDF, Office (DOCX, PPTX), HTML, TXT
+│   │   └── processor.py # Universal ingestion engine with idempotent skipping
 │   ├── services/
-│   │   └── retrieval/   # Gemini embeddings + Qdrant search + FlashRank reranking
-│   ├── config.py        # Centralized environment variable management
-│   └── main.py          # FastAPI entrypoint — guardrails gate + /query endpoint
-├── evals/               # RAGAS evaluation suite + Streamlit 3-tab demo
-├── ui/                  # Streamlit chat interface with reasoning step transparency
-├── processed_data/      # Auto-generated — parsed & chunked JSON output per document
-├── docs/                # Architectural and operational guides (11 docs)
-├── DATA/                # Sample datasets (True vs Noisy documentation)
-└── requirements.txt     # Pinned dependencies
+│   │   └── retrieval/   # Gemini embeddings, Qdrant client, and FlashRank reranking
+│   ├── config.py        # Centralized settings and environment management
+│   └── main.py          # FastAPI application entrypoint with /query and /graph
+├── evals/               # RAGAS evaluation suite, golden dataset, and Streamlit app
+├── ui/                  # Streamlit chat interface with thought-process transparency
+├── processed_data/      # Parsed and chunked JSON metadata per document
+├── docs/                # Architecture, design decisions, and operational guides (11 docs)
+├── DATA/                # Datasets: ground truth (true_data) and distractor (noisy_data)
+├── Dockerfile           # Multi-stage production container configuration
+└── requirements.txt     # Pinned Python dependencies
 ```
 
 ---
@@ -62,14 +68,14 @@ graph TD
 ## Tech Stack
 
 | Layer | Technology |
-|-------|-----------|
+| :--- | :--- |
 | Orchestration | LangChain + LangGraph |
-| LLMs | Groq (Llama 3.3 70B) via **Portkey** gateway |
-| Guardrails | NeMo Guardrails |
-| Vector DB | Qdrant Cloud |
-| Reranking | FlashRank (local, zero-latency) |
-| Embeddings | Gemini `gemini-embedding-2-preview` (3072-dim) |
-| Document Parsing | pypdf + pdfplumber (local, no OCR service) |
+| LLMs | Groq via **Portkey** Gateway (`openai/gpt-oss-120b`, `llama-3.3-70b`) |
+| Guardrails | NVIDIA NeMo Guardrails (Colang) |
+| Vector Database | Qdrant Cloud |
+| Re-ranking | FlashRank (`ms-marco-TinyBERT-L-2-v2`, local CPU) |
+| Embeddings | Google `gemini-embedding-2-preview` (3072 dimensions) |
+| Document Parsing | Local loaders (pypdf, python-docx, python-pptx, BeautifulSoup) |
 | Observability | Pydantic Logfire + LangSmith |
 | Evaluation | RAGAS + custom Tool Correctness (Jaccard) |
 
@@ -77,93 +83,153 @@ graph TD
 
 ## Getting Started
 
-### 1. Install dependencies
+### 1. Install Dependencies
 
 ```powershell
-python -m venv tenvv
-.\tenvv\Scripts\activate
+python -m venv .venv
+.\.venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-### 2. Configure environment
+### 2. Configure Environment
 
-Create a `.env` file with the following keys:
+Create a `.env` file in the project root with the following variables:
 
-```env
-# Groq Reasoning Engine (Llama 3.3)
-GROQ_API_KEY = ""
-GROQ_FALLBACK_API_KEY = ""          # second Groq key, or same as primary
+```ini
+# LLM Inference (Groq & Portkey Gateway)
+GROQ_API_KEY=""
+GROQ_FALLBACK_API_KEY=""
+GROQ_SLUG="rag2"
+GROQ_MODEL="openai/gpt-oss-120b"
+PORTKEY_API_KEY=""
 
-# Portkey LLM Gateway
-PORTKEY_API_KEY = ""
+# Vector Database (Qdrant Cloud)
+QDRANT_API_KEY=""
+QDRANT_URL=""
+QDRANT_COLLECTION="enterprise-knowledge-base"
 
-# Qdrant Vector DB
-QDRANT_API_KEY = ""
-QDRANT_CLUSTER_ENDPOINT = ""        # e.g. https://your-cluster.cloud.qdrant.io:6333
+# Embeddings (Google Gemini)
+GEMINI_API_KEY=""
 
-# Pydantic Logfire Observability
-LOGFIRE_TOKEN = ""
+# Observability
+LOGFIRE_TOKEN=""
+LANGSMITH_TRACING=true
+LANGSMITH_ENDPOINT="https://api.smith.langchain.com"
+LANGSMITH_API_KEY=""
+LANGSMITH_PROJECT="tessera-rag"
 
-# LangSmith
-LANGSMITH_TRACING = true
-LANGSMITH_ENDPOINT = https://api.smith.langchain.com
-LANGSMITH_API_KEY = ""
-LANGSMITH_PROJECT = ""
+# Service URLs
+BACKEND_URL="http://localhost:8000"
 
-# Streamlit UI → FastAPI
-BACKEND_URL = ""                    # e.g. http://localhost:8000
-
-# Eval judge LLM (keep separate from main key to avoid rate-limiting the live app)
-JUDGE_GROQ = ""
-
-# Gemini Embeddings
-GEMINI_API_KEY = ""
+# Evaluation Judge LLM
+JUDGE_GROQ=""
 ```
 
-### 3. Run data ingestion
+### 3. Run Data Ingestion
 
-Parses all documents in `DATA/`, chunks them, saves metadata to `processed_data/`, and indexes vectors into Qdrant.
+Scans documents in `DATA/`, extracts text locally, chunks paragraphs, saves metadata to `processed_data/`, and indexes vectors into Qdrant. The ingestion process is idempotent and automatically skips already-indexed files.
 
 ```powershell
+# Ingest entire DATA directory (skips already-indexed files automatically)
+python -m app.ingestion.processor DATA
+
+# Drop and recreate collection from scratch
 python -m app.ingestion.processor DATA --wipe
+
+# Ingest a specific directory
+python -m app.ingestion.processor DATA/true_data true
 ```
 
-> Pass `--wipe` to drop and recreate the Qdrant collection. Omit it to append to an existing collection.
-
-### 4. Launch the app
+### 4. Launch the Applications
 
 ```powershell
-# Terminal 1 — FastAPI backend
+# Terminal 1: FastAPI Backend
 uvicorn app.main:app --reload --port 8000
 
-# Terminal 2 — Streamlit UI
+# Terminal 2: Streamlit Chat Interface
 streamlit run ui/app.py
 ```
 
-### 5. Run the eval suite (optional)
+- Web Chat UI: `http://localhost:8501`
+- Swagger Documentation: `http://localhost:8000/docs`
+- Interactive Agent Graph: `http://localhost:8000/graph`
+
+### 5. Run the Evaluation Suite (Optional)
 
 ```powershell
-# Requires the FastAPI backend running on :8000
+# Requires the backend running on port 8000
 streamlit run evals/app.py
+```
+
+---
+
+## API Reference
+
+### POST `/query`
+
+Executes the agentic pipeline with Gate 1 NeMo Guardrails check and Gate 2 LangGraph multi-step reasoning.
+
+#### Request
+
+```json
+{
+  "q": "What is the recommended approach for autoscaling pods based on custom metrics?",
+  "thread_id": "default_user"
+}
+```
+
+#### Response (Clean Technical Query)
+
+```json
+{
+  "question": "What is the recommended approach for autoscaling pods based on custom metrics?",
+  "answer": "To autoscale pods using custom metrics, deploy the Horizontal Pod Autoscaler (HPA) configured against the Custom Metrics API paired with the Prometheus Adapter...",
+  "thought_process": [
+    "Start",
+    "Intent: Technical",
+    "Search Term: Kubernetes pod autoscaling custom metrics HPA Prometheus adapter",
+    "Response generated."
+  ],
+  "status": "Response generated.",
+  "sources": [
+    "pods_autoscale.html",
+    "architecture.pptx"
+  ]
+}
+```
+
+#### Response (Out-of-Scope Query Blocked by Guardrail)
+
+```json
+{
+  "question": "write a code to reverse a string in cpp",
+  "answer": "I'm an Enterprise IT Assistant focused on Kubernetes, Intel hardware, and networking documentation. I cannot assist with general programming tasks or unrelated topics.",
+  "thought_process": [
+    "Intent: Guardrails Fired",
+    "Retrieval: Skipped"
+  ],
+  "status": "Blocked by guardrails.",
+  "sources": []
+}
 ```
 
 ---
 
 ## Documentation Index
 
-| # | Guide | What it covers |
-|---|-------|---------------|
-| 01 | [System Overview](docs/01_SYSTEM_OVERVIEW.md) | High-level vision and end-to-end flow |
-| 02 | [Ingestion Engine](docs/02_INGESTION_ENGINE.md) | Document parsing and indexing pipeline |
-| 03 | [Node Intelligence](docs/03_NODE_INTELLIGENCE.md) | Planner, Retriever, Responder internals |
-| 04 | [Observability](docs/04_TRACING_AND_OBSERVABILITY.md) | Logfire + LangSmith tracing |
-| 05 | [Environment Variables](docs/05_ENVIRONMENT_VARIABLES.md) | All env vars and configuration reference |
-| 06 | [Known Gotchas](docs/06_KNOWN_GOTCHAS.md) | Non-obvious bugs and architectural decisions |
-| 07 | [FlashRank Reranking](docs/07_FLASHRANK_RERANKING.md) | Local semantic reranker deep-dive |
-| 08 | [Guardrails](docs/08_GUARDRAILS.md) | NeMo Guardrails implementation |
-| 09 | [LLM Gateway](docs/09_LLM_GATEWAY.md) | Portkey routing, fallback, and observability |
-| 10 | [Evals](docs/10_EVALS.md) | RAGAS metrics theory and token budget |
-| 11 | [Evals Pipeline](docs/11_EVALS_PIPELINE.md) | Live eval pipeline and Streamlit demo |
+| # | Guide | What It Covers |
+| :--- | :--- | :--- |
+| 01 | [System Overview](docs/01_SYSTEM_OVERVIEW.md) | High-level vision and end-to-end request lifecycle |
+| 02 | [Ingestion Engine](docs/02_INGESTION_ENGINE.md) | Document parsing, paragraph chunking, and indexing |
+| 03 | [Node Intelligence](docs/03_NODE_INTELLIGENCE.md) | Planner, Retriever, and Responder internals |
+| 04 | [Observability](docs/04_TRACING_AND_OBSERVABILITY.md) | Logfire and LangSmith distributed tracing |
+| 05 | [Environment Variables](docs/05_ENVIRONMENT_VARIABLES.md) | Environment configuration reference |
+| 06 | [Known Gotchas](docs/06_KNOWN_GOTCHAS.md) | Non-obvious bugs, rate limits, and architectural decisions |
+| 07 | [FlashRank Reranking](docs/07_FLASHRANK_RERANKING.md) | Local cross-encoder semantic re-ranking |
+| 08 | [Guardrails](docs/08_GUARDRAILS.md) | NeMo Guardrails implementation and Colang flows |
+| 09 | [LLM Gateway](docs/09_LLM_GATEWAY.md) | Portkey routing, fallback, and semantic caching |
+| 10 | [Evaluation Theory](docs/10_EVALS.md) | RAGAS metrics formulation and token budgeting |
+| 11 | [Evaluation Pipeline](docs/11_EVALS_PIPELINE.md) | Live evaluation pipeline and Streamlit dashboard |
 
 ---
 

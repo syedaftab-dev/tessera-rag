@@ -1,0 +1,17 @@
+# ==============================================================================
+# ENTERPRISE AGENTIC RAG - OFFLINE INGESTION & EVALUATION REQUIREMENTS
+# ==============================================================================
+-r requirements.txt
+
+# --- DATA INGESTION & DOCUMENT PARSING ---
+unstructured
+python-pptx
+python-docx
+pypdf
+beautifulsoup4
+pdfplumber
+
+# --- EVALUATION (EVALS) ---
+ragas
+deepeval
+langfuse

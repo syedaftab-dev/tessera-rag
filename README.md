@@ -1,5 +1,11 @@
 # Tessera-RAG System
 
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Streamlit-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white)](https://tessera.streamlit.app/)
+
+> **Live Application**: [https://tessera.streamlit.app/](https://tessera.streamlit.app/)
+
+![Tessera Dashboard](assets/tessera_ui.png)
+
 A production-grade, enterprise-level Agentic RAG system built with **LangGraph**, **Portkey LLM Gateway**, and **Gemini Embeddings**. The system distinguishes between technical "True Data" and random "Noisy Data" using semantic re-ranking, history-aware planning, and NeMo Guardrails for input and output safety.
 
 ---

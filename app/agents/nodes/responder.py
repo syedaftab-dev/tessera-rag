@@ -1,6 +1,7 @@
 import logfire
 from app.agents.state import AgentState
 from app.gateway import portkey_client, extract_cache_status
+from app.config import settings
 
 
 def generate_node(state: AgentState):
@@ -21,8 +22,14 @@ def generate_node(state: AgentState):
     if query == "CONVERSATIONAL":
         logfire.info("Generating conversational response using memory.")
         prompt = f"""
-        You are a friendly and helpful Enterprise AI Assistant.
+        You are a concise Enterprise IT Assistant specializing exclusively in Kubernetes, Intel hardware, and Enterprise Networking.
         Answer the user's latest message using the CONVERSATION HISTORY below.
+        
+        RULES:
+        1. If the message is a greeting or asks about your capabilities, be polite and concise.
+        2. If the user asks for general programming (e.g., C++, Python, algorithms, LeetCode) or off-topic advice, do NOT write code or provide general knowledge. Concisely respond:
+           "I am specialized only in Enterprise Kubernetes, Intel hardware, and networking documentation. I cannot assist with general programming tasks or unrelated topics."
+        3. Keep responses brief and focused.
 
         CONVERSATION HISTORY:
         {history_str}
@@ -43,8 +50,15 @@ def generate_node(state: AgentState):
                 break
 
         prompt = f"""
-        You are a Senior Technical Architect.
-        Answer the question using the TECHNICAL CONTEXT provided.
+        You are a Senior Technical Architect specializing exclusively in Enterprise Kubernetes, Intel hardware, and Enterprise Networking.
+        
+        STRICT RULES:
+        1. Answer ONLY using the TECHNICAL CONTEXT provided below.
+        2. If the question asks for general programming, data structures, algorithms, or code unrelated to the documentation (e.g., reversing strings in C++, writing Python/Java scripts, LeetCode problems), DO NOT answer or generate code.
+           Immediately respond with:
+           "I am specialized only in Enterprise Kubernetes, Intel hardware, and networking documentation. I cannot assist with general programming tasks or unrelated topics."
+        3. If the context does not contain sufficient information to answer the question, state concisely that the information is not available in the enterprise documentation.
+        4. Do NOT hallucinate or waste tokens on lengthy disclaimers or unsolicited code.
 
         TECHNICAL CONTEXT:
         {full_context}
@@ -59,6 +73,7 @@ def generate_node(state: AgentState):
     with logfire.span("✍️ LLM Synthesis"):
         try:
             response = portkey_client.chat.completions.create(
+                model=f"@{settings.GROQ_SLUG}/{settings.GROQ_MODEL}",
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0.1
             )

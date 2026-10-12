@@ -2,17 +2,24 @@
 # CRITICAL: logfire MUST be configured before ALL other imports
 # so that spans from all modules are captured from the start.
 # ============================================================
+import sys
+if sys.platform == "win32":
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    if hasattr(sys.stderr, "reconfigure"):
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
 import logfire
 import os
 from dotenv import load_dotenv
 
 load_dotenv()
-logfire.configure(token=os.getenv("LOGFIRE_TOKEN"))
+logfire.configure(token=os.getenv("LOGFIRE_TOKEN"), inspect_arguments=False)
 
 # Now safe to import app modules - logfire is already active
 from fastapi import FastAPI, Response
 from app.agents.graph import rag_agent
-# from app.guardrails import initialize_rails, guard
+from app.guardrails import initialize_rails, guard
 
 from pydantic import BaseModel
 from typing import Optional

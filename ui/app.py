@@ -247,7 +247,6 @@ if prompt := st.chat_input("Ask about Kubernetes, Intel hardware or networking")
     )
 
     # Call Backend API asynchronously in background thread so stages animate live
-    # Check Streamlit Cloud secrets first, then environment variables (.env / OS)
     backend_url = None
     try:
         if "BACKEND_URL" in st.secrets:

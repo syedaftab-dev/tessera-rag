@@ -5,10 +5,11 @@ from app.config import settings
 from app.services.retrieval.embedding import embed_query
 
 
-# Initialize Qdrant Client
+# Initialize Qdrant Client with 5s timeout to prevent hanging on unresponsive/sleeping clusters
 client = QdrantClient(
     url=settings.QDRANT_URL,
-    api_key=settings.QDRANT_API_KEY
+    api_key=settings.QDRANT_API_KEY,
+    timeout=5.0
 )
 
 def search_enterprise_knowledge(query: str, limit: int = 8):

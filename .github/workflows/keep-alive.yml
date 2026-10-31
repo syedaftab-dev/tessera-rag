@@ -18,3 +18,4 @@ jobs:
           fi
           echo "Pinging $URL/health ..."
           curl -sS -m 30 "$URL/health" || echo "Backend ping completed (waking up or offline)"
+

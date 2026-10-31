@@ -41,7 +41,24 @@ app.add_middleware(
 
 @app.on_event("startup")
 def startup_event():
+    # 1. Warm up NeMo Guardrails
     initialize_rails()
+
+    # 2. Warm up FlashRank Cross-Encoder ONNX model (avoids 6-8s freeze on first query)
+    try:
+        from app.services.retrieval.ranking_service import _get_ranker
+        _get_ranker()
+        logfire.info("⚡ FlashRank model pre-warmed successfully.")
+    except Exception as e:
+        logfire.warning(f"FlashRank pre-warm failed: {e}")
+
+    # 3. Warm up Embedding Client
+    try:
+        from app.services.retrieval.embedding import _init
+        _init()
+        logfire.info("⚡ Embedding model pre-warmed successfully.")
+    except Exception as e:
+        logfire.warning(f"Embedding pre-warm failed: {e}")
 
 class QueryRequest(BaseModel):
     q: str

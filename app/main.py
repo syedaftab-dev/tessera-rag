@@ -18,6 +18,7 @@ logfire.configure(token=os.getenv("LOGFIRE_TOKEN"), inspect_arguments=False)
 
 # Now safe to import app modules - logfire is already active
 from fastapi import FastAPI, Response
+from fastapi.middleware.cors import CORSMiddleware
 from app.agents.graph import rag_agent
 from app.guardrails import initialize_rails, guard
 
@@ -27,6 +28,15 @@ from typing import Optional
 
 # Initialize FastAPI
 app = FastAPI(title="Enterprise Agentic RAG API")
+
+# Enable CORS for cross-origin frontend clients (e.g. Streamlit, local dev, swagger)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.on_event("startup")
@@ -41,6 +51,11 @@ class QueryRequest(BaseModel):
 @app.get("/")
 def home():
     return {"message": "Enterprise LangGraph RAG API is live."}
+
+
+@app.get("/health")
+def health():
+    return {"status": "healthy", "service": "Enterprise LangGraph RAG API"}
 
 
 @app.get("/graph")

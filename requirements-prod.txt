@@ -1,0 +1,47 @@
+# ==============================================================================
+# ENTERPRISE AGENTIC RAG - PRODUCTION RUNTIME REQUIREMENTS
+# ==============================================================================
+
+# --- CORE API & WEB FRAMEWORK ---
+fastapi
+uvicorn[standard]
+python-dotenv
+requests
+numpy
+pytz
+nest-asyncio
+pydantic>=2.0.0
+
+# --- GEMINI EMBEDDINGS ---
+google-generativeai
+langchain-google-genai
+
+# --- VECTOR DB & RETRIEVAL ---
+qdrant-client
+flashrank
+
+# --- LANGCHAIN & AGENTIC ORCHESTRATION ---
+langchain
+langgraph
+langchain-groq
+langchain-community
+langchain-openai
+
+# --- GUARDRAILS ---
+nemoguardrails
+langchain-nvidia-ai-endpoints
+
+# --- LLM GATEWAY ---
+portkey-ai
+
+# --- OBSERVABILITY & DISTRIBUTED TRACING ---
+langsmith
+logfire[fastapi,requests]
+loguru
+
+# --- FRONTEND UI ---
+streamlit
+markdown-it-py
+
+# --- EMBEDDINGS FALLBACK ---
+sentence-transformers

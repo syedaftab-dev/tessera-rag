@@ -1,0 +1,35 @@
+services:
+  - type: web
+    name: tessera-rag-backend
+    runtime: docker
+    plan: free
+    region: oregon
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: PORT
+        value: 8080
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GROQ_FALLBACK_API_KEY
+        sync: false
+      - key: GROQ_MODEL
+        value: openai/gpt-oss-120b
+      - key: GROQ_SLUG
+        value: rag2
+      - key: GROQ_SLUG_2
+        value: rag2
+      - key: QDRANT_CLUSTER_ENDPOINT
+        sync: false
+      - key: QDRANT_API_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: PORTKEY_API_KEY
+        sync: false
+      - key: LOGFIRE_TOKEN
+        sync: false
+      - key: OTEL_EXPORTER_OTLP_ENDPOINT
+        value: https://logfire-us.pydantic.dev
+      - key: OTEL_EXPORTER_OTLP_HEADERS
+        sync: false

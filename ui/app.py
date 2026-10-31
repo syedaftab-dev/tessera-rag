@@ -247,7 +247,16 @@ if prompt := st.chat_input("Ask about Kubernetes, Intel hardware or networking")
     )
 
     # Call Backend API asynchronously in background thread so stages animate live
-    backend_url = os.getenv("BACKEND_URL", "http://localhost:8000")
+    # Check Streamlit Cloud secrets first, then environment variables (.env / OS)
+    backend_url = None
+    try:
+        if "BACKEND_URL" in st.secrets:
+            backend_url = st.secrets["BACKEND_URL"]
+    except Exception:
+        pass
+    if not backend_url:
+        backend_url = os.getenv("BACKEND_URL", "http://localhost:8000")
+
     query_url = f"{backend_url.rstrip('/')}/query"
     payload = {"q": prompt, "thread_id": st.session_state.session_id}
 

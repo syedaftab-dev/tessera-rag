@@ -55,7 +55,18 @@ def home():
 
 @app.get("/health")
 def health():
-    return {"status": "healthy", "service": "Enterprise LangGraph RAG API"}
+    qdrant_status = "connected"
+    try:
+        from app.services.retrieval.qdrant_service import client
+        client.get_collections()
+    except Exception as e:
+        qdrant_status = f"unreachable ({type(e).__name__})"
+
+    return {
+        "status": "healthy" if qdrant_status == "connected" else "degraded",
+        "service": "Enterprise LangGraph RAG API",
+        "qdrant": qdrant_status
+    }
 
 
 @app.get("/graph")

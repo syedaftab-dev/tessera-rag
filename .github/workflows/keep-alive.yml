@@ -1,0 +1,20 @@
+name: Keep Services Alive
+
+on:
+  schedule:
+    # Runs every 14 minutes to prevent Render free instance sleep & Qdrant suspension
+    - cron: '*/14 * * * *'
+  workflow_dispatch:
+
+jobs:
+  ping-backend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Backend Health
+        run: |
+          URL="${{ secrets.BACKEND_URL }}"
+          if [ -z "$URL" ]; then
+            URL="https://tessera-rag-backend.onrender.com"
+          fi
+          echo "Pinging $URL/health ..."
+          curl -sS -m 30 "$URL/health" || echo "Backend ping completed (waking up or offline)"
